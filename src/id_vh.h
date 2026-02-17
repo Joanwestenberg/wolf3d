@@ -35,7 +35,7 @@ typedef struct
 
 typedef struct
 {
-	int width, height;
+	int16_t width, height;  // 16-bit in data files
 } pictabletype;
 
 typedef struct

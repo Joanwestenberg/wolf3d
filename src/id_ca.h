@@ -8,9 +8,9 @@
 
 typedef struct
 {
-	long     planestart[3];
-	unsigned planelength[3];
-	unsigned width, height;
+	int32_t  planestart[3];
+	uint16_t planelength[3];
+	uint16_t width, height;
 	char     name[16];
 } maptype;
 
@@ -42,8 +42,8 @@ extern char      extension[5],
                  aheadname[10],
                  afilename[10];
 
-extern long      *grstarts;
-extern long      *audiostarts;
+extern int32_t   *grstarts;
+extern int32_t   *audiostarts;
 
 //
 // hooks for custom cache dialogs

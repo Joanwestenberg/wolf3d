@@ -75,8 +75,8 @@ typedef struct
 
 typedef struct
 {
-	unsigned	RLEWtag;
-	long		headeroffsets[100];
+	uint16_t	RLEWtag;
+	int32_t		headeroffsets[100];
 	byte		tileinfo[];
 } mapfiletype;
 
@@ -123,8 +123,8 @@ char extension[5],	// Need a string, not constant to change cache files
 
 void CA_CannotOpen(char *string);
 
-long		*grstarts;	// array of offsets in egagraph, -1 for sparse
-long		*audiostarts;	// array of offsets in audio / audiot
+int32_t		*grstarts;	// array of offsets in egagraph, -1 for sparse (32-bit in data files)
+int32_t		*audiostarts;	// array of offsets in audio / audiot (32-bit in data files)
 
 huffnode	grhuffman[255];
 huffnode	audiohuffman[255];
@@ -665,7 +665,7 @@ void CAL_SetupGrFile (void)
 //
 	temp = NULL;
 	MM_GetPtr (&temp,(NUMCHUNKS+1)*FILEPOSSIZE);
-	grstarts = (long *)temp;
+	grstarts = (int32_t *)temp;
 
 	strcpy(fname,gheadname);
 	strcat(fname,extension);
@@ -823,7 +823,7 @@ void CAL_SetupAudioFile (void)
 
 	temp = NULL;
 	MM_GetPtr (&temp,length);
-	audiostarts = (long *)temp;
+	audiostarts = (int32_t *)temp;
 	CA_FarRead(handle, (byte *)audiostarts, length);
 	close(handle);
 
@@ -1028,7 +1028,7 @@ void CAL_ExpandGrChunk (int chunk, byte *source)
 	//
 	// everything else has an explicit size longword
 	//
-		expanded = *(long *)source;
+		expanded = *(int32_t *)source;  // data files store 32-bit sizes
 		source += 4;			// skip over length
 	}
 
@@ -1143,7 +1143,7 @@ void CA_CacheScreen (int chunk)
 	CA_FarRead(grhandle,(byte *)bigbufferseg,compressed);
 	source = (byte *)bigbufferseg;
 
-	expanded = *(long *)source;
+	expanded = *(int32_t *)source;  // data files store 32-bit sizes
 	source += 4;			// skip over length
 
 //
