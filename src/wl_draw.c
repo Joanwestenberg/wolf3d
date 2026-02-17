@@ -359,7 +359,7 @@ void ScalePost (void)
 	byte	*src;
 	byte	col;
 
-	height = wallheight[postx] >> 3;  // height in pixels (wallheight has 3 fractional bits)
+	height = wallheight[postx] >> 2;  // height in pixels (wallheight has 2 fractional bits)
 	if (height <= 0)
 		return;
 

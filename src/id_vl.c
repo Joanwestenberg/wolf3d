@@ -436,15 +436,15 @@ void VL_PlanarToScreen(byte *source, int width, int height, int x, int y)
 
 void VL_LatchToScreen(unsigned source, int width, int height, int x, int y)
 {
-	// Copy from latch memory to screen
-	int w = width * 4; // width in Mode X words -> pixels
+	// Copy from latch memory (linear pixel format) to screen
+	// width is in pixels (NOT Mode X bytes)
 	int py;
 	for (py = 0; py < height; py++)
 	{
-		int srcoff = source + py * w;
+		int srcoff = source + py * width;
 		int dstoff = (y + py) * 320 + x;
-		if (srcoff + w <= VL_LATCHMEM_SIZE && dstoff + w <= 320 * 200)
-			memcpy(&sdl_framebuffer[dstoff], &vl_latchmem[srcoff], w);
+		if (srcoff + width <= VL_LATCHMEM_SIZE && dstoff + width <= 320 * 200)
+			memcpy(&sdl_framebuffer[dstoff], &vl_latchmem[srcoff], width);
 	}
 }
 
