@@ -693,6 +693,8 @@ void SignonScreen (void)                        // VGA version
 		VL_MungePic (introscn,320,200);
 		VL_MemToScreen (introscn,320,200,0,0);
 	}
+
+	VL_Present();  // SDL2: must explicitly present (DOS VGA was immediate)
 }
 
 
@@ -724,6 +726,8 @@ void FinishSignon (void)
 
 	#endif
 
+	VL_Present();  // SDL2: present before waiting for input
+
 	if (!NoWait)
 		IN_Ack ();
 
@@ -738,6 +742,8 @@ void FinishSignon (void)
 	#else
 	US_CPrint ("Working...");
 	#endif
+
+	VL_Present();  // SDL2: show "Working..." message
 
 	#endif
 
