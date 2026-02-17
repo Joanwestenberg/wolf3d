@@ -332,27 +332,32 @@ US_SetPrintRoutines(void (*measure)(char far *,word *,word *),void (*print)(char
 //
 ///////////////////////////////////////////////////////////////////////////
 void
-US_Print(char far *s)
+US_Print(const char far *s)
 {
-	char	c,far *se;
+	char	c;
+	const char far *se;
+	char	line[256];
 	word	w,h;
+	int		len;
 
 	while (*s)
 	{
 		se = s;
 		while ((c = *se) && (c != '\n'))
 			se++;
-		*se = '\0';
+		len = (int)(se - s);
+		if (len > 255) len = 255;
+		memcpy(line, s, len);
+		line[len] = '\0';
 
-		USL_MeasureString(s,&w,&h);
+		USL_MeasureString(line,&w,&h);
 		px = PrintX;
 		py = PrintY;
-		USL_DrawString(s);
+		USL_DrawString(line);
 
 		s = se;
 		if (c)
 		{
-			*se = c;
 			s++;
 
 			PrintX = WindowX;
@@ -435,7 +440,7 @@ US_PrintCentered(char far *s)
 //
 ///////////////////////////////////////////////////////////////////////////
 void
-US_CPrintLine(char far *s)
+US_CPrintLine(const char far *s)
 {
 	word	w,h;
 
@@ -456,25 +461,28 @@ US_CPrintLine(char far *s)
 //
 ///////////////////////////////////////////////////////////////////////////
 void
-US_CPrint(char far *s)
+US_CPrint(const char far *s)
 {
-	char	c,far *se;
+	char	c;
+	const char far *se;
+	char	line[256];
+	int		len;
 
 	while (*s)
 	{
 		se = s;
 		while ((c = *se) && (c != '\n'))
 			se++;
-		*se = '\0';
+		len = (int)(se - s);
+		if (len > 255) len = 255;
+		memcpy(line, s, len);
+		line[len] = '\0';
 
-		US_CPrintLine(s);
+		US_CPrintLine(line);
 
 		s = se;
 		if (c)
-		{
-			*se = c;
 			s++;
-		}
 	}
 }
 
