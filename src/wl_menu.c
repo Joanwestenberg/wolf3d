@@ -3961,12 +3961,15 @@ void CheckForEpisodes(void)
 #endif
 
 #else
-	if (access_ci("VSWAP.WL1",F_OK)==0)
+	if (extension[0] == '\0')  // not already set by WL6/WL3 check above
 	{
-		strcpy(extension,"WL1");
+		if (access_ci("VSWAP.WL1",F_OK)==0)
+		{
+			strcpy(extension,"WL1");
+		}
+		else
+			Quit("NO WOLFENSTEIN 3-D DATA FILES to be found!");
 	}
-	else
-		Quit("NO WOLFENSTEIN 3-D DATA FILES to be found!");
 #endif
 
 	strcat(configname,extension);
