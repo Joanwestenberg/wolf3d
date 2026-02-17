@@ -26,7 +26,6 @@ typedef int32_t   fixed;
 typedef void     *memptr;
 typedef uint8_t  *Ptr;
 
-typedef enum { false_val, true_val } boolean_t;
 // Use int for boolean to match original sizeof
 typedef int boolean;
 #ifndef true

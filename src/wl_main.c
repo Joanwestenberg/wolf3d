@@ -1,6 +1,8 @@
 // WL_MAIN.C - macOS ARM64/SDL2 port
 
 #include "wl_def.h"
+#include <libgen.h>
+#include <mach-o/dyld.h>
 
 extern void PG13(void);
 extern void NonShareware(void);
@@ -1479,6 +1481,20 @@ int main (int argc, char *argv[])
 
 	_argc = argc;
 	_argv = argv;
+
+	//
+	// Change to the executable's directory so data files are found
+	// regardless of where the user launches from
+	//
+	{
+		uint32_t pathsize = 1024;
+		char exepath[1024];
+		if (_NSGetExecutablePath(exepath, &pathsize) == 0)
+		{
+			char *dir = dirname(exepath);
+			chdir(dir);
+		}
+	}
 
 	CheckForEpisodes();
 
