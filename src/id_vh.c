@@ -15,7 +15,7 @@ int  px, py;
 unsigned latchpics[NUMLATCHPICS];
 unsigned freelatch;
 
-byte gamepal[768]; // 256 * 3
+extern byte gamepal[768]; // defined in signon.c
 
 //==========================================================================
 
