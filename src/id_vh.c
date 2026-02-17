@@ -47,7 +47,7 @@ void VWB_DrawTile8(int x, int y, int tile)
 		return;
 
 	src = ((byte *)grsegs[STARTTILE8]) + tile * 64;
-	VL_MemToScreen(src, 8, 8, x, y);
+	VL_PlanarToScreen(src, 8, 8, x, y);
 }
 
 void VWB_DrawTile8M(int x, int y, int tile)
@@ -75,7 +75,7 @@ void VWB_DrawPic(int x, int y, int chunknum)
 	picwidth = pictable[chunknum - STARTPICS].width;
 	picheight = pictable[chunknum - STARTPICS].height;
 
-	VL_MemToScreen((byte *)grsegs[chunknum], picwidth, picheight, x & ~7, y);
+	VL_PlanarToScreen((byte *)grsegs[chunknum], picwidth, picheight, x & ~7, y);
 }
 
 void VWB_DrawMPic(int x, int y, int chunknum)

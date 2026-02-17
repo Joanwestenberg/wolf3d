@@ -399,7 +399,22 @@ void VL_ScreenToScreen(unsigned source, unsigned dest, int width, int height)
 
 void VL_MemToScreen(byte *source, int width, int height, int x, int y)
 {
-	// Copy de-interleaved (planar) data to screen
+	// After VL_MungePic, data is already in linear pixel order
+	int py;
+
+	for (py = 0; py < height; py++)
+	{
+		if (y + py < 200)
+			memcpy(&sdl_framebuffer[(y + py) * 320 + x],
+				   &source[py * width],
+				   (x + width <= 320) ? width : 320 - x);
+	}
+}
+
+void VL_PlanarToScreen(byte *source, int width, int height, int x, int y)
+{
+	// De-interleave VGA planar data (plane-sequential) to linear framebuffer
+	// Used for cached graphics that haven't been through VL_MungePic
 	int plane, px, py;
 	int planewidth = width / 4;
 

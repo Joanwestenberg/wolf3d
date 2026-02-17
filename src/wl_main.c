@@ -3,6 +3,18 @@
 #include "wl_def.h"
 #include <libgen.h>
 #include <mach-o/dyld.h>
+#include <signal.h>
+#include <execinfo.h>
+
+static void crash_handler(int sig)
+{
+	void *bt[64];
+	int n = backtrace(bt, 64);
+	fprintf(stderr, "\n=== CRASH: signal %d ===\n", sig);
+	backtrace_symbols_fd(bt, n, 2);
+	_exit(1);
+}
+
 
 extern void PG13(void);
 extern void NonShareware(void);
@@ -1484,6 +1496,10 @@ char    *nosprtxt[] = {"nospr",nil};
 int main (int argc, char *argv[])
 {
 	int     i;
+
+	signal(SIGSEGV, crash_handler);
+	signal(SIGBUS, crash_handler);
+	signal(SIGABRT, crash_handler);
 
 	_argc = argc;
 	_argv = argv;
