@@ -18,8 +18,46 @@ loaded into the data segment
 #include "id_heads.h"
 
 #include <stdint.h>
+#include <ctype.h>
 
 #define THREEBYTEGRSTARTS
+
+/*
+=====================
+=
+= CAL_OpenCaseInsensitive
+=
+= Try to open a file trying original case, then lowercase, then uppercase.
+= macOS default APFS is case-insensitive, but case-sensitive volumes exist.
+=
+=====================
+*/
+static int CAL_OpenCaseInsensitive(const char *filename, int flags, int mode)
+{
+	int handle;
+	char buf[64];
+	int i;
+
+	// Try as-is first
+	handle = open(filename, flags, mode);
+	if (handle != -1)
+		return handle;
+
+	// Try lowercase
+	for (i = 0; filename[i] && i < 63; i++)
+		buf[i] = tolower((unsigned char)filename[i]);
+	buf[i] = '\0';
+	handle = open(buf, flags, mode);
+	if (handle != -1)
+		return handle;
+
+	// Try uppercase
+	for (i = 0; filename[i] && i < 63; i++)
+		buf[i] = toupper((unsigned char)filename[i]);
+	buf[i] = '\0';
+	handle = open(buf, flags, mode);
+	return handle;
+}
 
 /*
 =============================================================================
@@ -615,7 +653,7 @@ void CAL_SetupGrFile (void)
 	strcpy(fname,gdictname);
 	strcat(fname,extension);
 
-	if ((handle = open(fname,
+	if ((handle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 
@@ -632,7 +670,7 @@ void CAL_SetupGrFile (void)
 	strcpy(fname,gheadname);
 	strcat(fname,extension);
 
-	if ((handle = open(fname,
+	if ((handle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 
@@ -646,7 +684,7 @@ void CAL_SetupGrFile (void)
 	strcpy(fname,gfilename);
 	strcat(fname,extension);
 
-	grhandle = open(fname, O_RDONLY | O_BINARY);
+	grhandle = CAL_OpenCaseInsensitive(fname, O_RDONLY | O_BINARY, S_IREAD);
 	if (grhandle == -1)
 		CA_CannotOpen(fname);
 
@@ -690,7 +728,7 @@ void CAL_SetupMapFile (void)
 	strcpy(fname,mheadname);
 	strcat(fname,extension);
 
-	if ((handle = open(fname,
+	if ((handle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 
@@ -710,14 +748,14 @@ void CAL_SetupMapFile (void)
 	strcpy(fname,"GAMEMAPS.");
 	strcat(fname,extension);
 
-	if ((maphandle = open(fname,
+	if ((maphandle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 #else
 	strcpy(fname,mfilename);
 	strcat(fname,extension);
 
-	if ((maphandle = open(fname,
+	if ((maphandle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 #endif
@@ -776,7 +814,7 @@ void CAL_SetupAudioFile (void)
 	strcpy(fname,aheadname);
 	strcat(fname,extension);
 
-	if ((handle = open(fname,
+	if ((handle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 
@@ -795,7 +833,7 @@ void CAL_SetupAudioFile (void)
 	strcpy(fname,afilename);
 	strcat(fname,extension);
 
-	if ((audiohandle = open(fname,
+	if ((audiohandle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 }

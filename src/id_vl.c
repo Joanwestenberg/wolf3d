@@ -100,6 +100,7 @@ void VL_Shutdown(void)
 	if (sdl_texture)  { SDL_DestroyTexture(sdl_texture);   sdl_texture = NULL; }
 	if (sdl_renderer) { SDL_DestroyRenderer(sdl_renderer); sdl_renderer = NULL; }
 	if (sdl_window)   { SDL_DestroyWindow(sdl_window);     sdl_window = NULL; }
+	SDL_Quit();
 }
 
 //==========================================================================
@@ -266,6 +267,10 @@ void VL_FadeOut(int start, int end, int red, int green, int blue, int steps)
 void VL_FadeIn(int start, int end, byte *palette, int steps)
 {
 	int i, j;
+	SDL_Color origpal[256];
+
+	// Save starting palette so we interpolate from fixed values
+	memcpy(origpal, sdl_palette, sizeof(origpal));
 
 	for (i = 0; i < steps; i++)
 	{
@@ -275,9 +280,9 @@ void VL_FadeIn(int start, int end, byte *palette, int steps)
 			int target_g = palette[j * 3 + 1] * 255 / 63;
 			int target_b = palette[j * 3 + 2] * 255 / 63;
 
-			sdl_palette[j].r = sdl_palette[j].r + (target_r - sdl_palette[j].r) * (i + 1) / steps;
-			sdl_palette[j].g = sdl_palette[j].g + (target_g - sdl_palette[j].g) * (i + 1) / steps;
-			sdl_palette[j].b = sdl_palette[j].b + (target_b - sdl_palette[j].b) * (i + 1) / steps;
+			sdl_palette[j].r = origpal[j].r + (target_r - origpal[j].r) * (i + 1) / steps;
+			sdl_palette[j].g = origpal[j].g + (target_g - origpal[j].g) * (i + 1) / steps;
+			sdl_palette[j].b = origpal[j].b + (target_b - origpal[j].b) * (i + 1) / steps;
 		}
 		UpdateRGBAPalette();
 		VL_Present();

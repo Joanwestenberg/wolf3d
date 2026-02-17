@@ -3,6 +3,24 @@
 // Loads VSWAP data from disk and caches pages in memory.
 
 #include "id_heads.h"
+#include <ctype.h>
+
+static int PM_OpenCaseInsensitive(const char *filename, int flags)
+{
+	int handle, i;
+	char buf[64];
+	handle = open(filename, flags);
+	if (handle != -1) return handle;
+	for (i = 0; filename[i] && i < 63; i++)
+		buf[i] = tolower((unsigned char)filename[i]);
+	buf[i] = '\0';
+	handle = open(buf, flags);
+	if (handle != -1) return handle;
+	for (i = 0; filename[i] && i < 63; i++)
+		buf[i] = toupper((unsigned char)filename[i]);
+	buf[i] = '\0';
+	return open(buf, flags);
+}
 
 char       PageFileName[13] = {"VSWAP."};
 static int PageFile = -1;
@@ -24,7 +42,7 @@ void PM_Startup(void)
 	if (PMStarted)
 		return;
 
-	PageFile = open(PageFileName, O_RDONLY | O_BINARY);
+	PageFile = PM_OpenCaseInsensitive(PageFileName, O_RDONLY | O_BINARY);
 	if (PageFile == -1)
 		Quit("PM_Startup: Unable to open page file");
 

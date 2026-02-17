@@ -1084,9 +1084,9 @@ void InitGame (void)
 
 	MM_Startup ();                  // so the signon screen can be freed
 
+	VW_Startup ();                  // must init SDL before SignonScreen touches framebuffer
 	SignonScreen ();
 
-	VW_Startup ();
 	IN_Startup ();
 	PM_Startup ();
 	PM_UnlockMainMem ();
@@ -1201,7 +1201,8 @@ boolean SetViewSize (unsigned width, unsigned height)
 	viewheight = height&~1;                 // must be even
 	centerx = viewwidth/2-1;
 	shootdelta = viewwidth/10;
-	screenofs = ((200-STATUSLINES-viewheight)/2*SCREENWIDTH+(320-viewwidth)/8);
+	// Flat framebuffer: screenofs is a byte offset into the 320-wide buffer
+	screenofs = ((200-STATUSLINES-viewheight)/2*320+(320-viewwidth)/2);
 
 //
 // calculate trace angles and projection constants

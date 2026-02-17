@@ -204,7 +204,7 @@ void ScaleLine (void)
                 {
                     if (x >= 0 && x < viewwidth)
                     {
-                        sdl_framebuffer[y * 320 + x] = pixel;
+                        sdl_framebuffer[(y + screenofs / 320) * 320 + (screenofs % 320) + x] = pixel;
                     }
                 }
             }

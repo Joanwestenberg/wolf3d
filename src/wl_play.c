@@ -466,7 +466,7 @@ void PollControls (void)
 	if (demoplayback)
 	{
 		while (TimeCount<lasttimecount+DEMOTICS)
-		;
+			SDL_Delay(1);
 		TimeCount = lasttimecount + DEMOTICS;
 		lasttimecount += DEMOTICS;
 		tics = DEMOTICS;
@@ -477,7 +477,7 @@ void PollControls (void)
 // take DEMOTICS or more tics, and modify Timecount to reflect time taken
 //
 		while (TimeCount<lasttimecount+DEMOTICS)
-		;
+			SDL_Delay(1);
 		TimeCount = lasttimecount + DEMOTICS;
 		lasttimecount += DEMOTICS;
 		tics = DEMOTICS;
