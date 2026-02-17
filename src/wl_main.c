@@ -1,6 +1,20 @@
 // WL_MAIN.C - macOS ARM64/SDL2 port
 
 #include "wl_def.h"
+#include <libgen.h>
+#include <mach-o/dyld.h>
+#include <signal.h>
+#include <execinfo.h>
+
+static void crash_handler(int sig)
+{
+	void *bt[64];
+	int n = backtrace(bt, 64);
+	fprintf(stderr, "\n=== CRASH: signal %d ===\n", sig);
+	backtrace_symbols_fd(bt, n, 2);
+	_exit(1);
+}
+
 
 extern void PG13(void);
 extern void NonShareware(void);
@@ -691,6 +705,8 @@ void SignonScreen (void)                        // VGA version
 		VL_MungePic (introscn,320,200);
 		VL_MemToScreen (introscn,320,200,0,0);
 	}
+
+	VL_Present();  // SDL2: must explicitly present (DOS VGA was immediate)
 }
 
 
@@ -722,6 +738,8 @@ void FinishSignon (void)
 
 	#endif
 
+	VL_Present();  // SDL2: present before waiting for input
+
 	if (!NoWait)
 		IN_Ack ();
 
@@ -736,6 +754,8 @@ void FinishSignon (void)
 	#else
 	US_CPrint ("Working...");
 	#endif
+
+	VL_Present();  // SDL2: show "Working..." message
 
 	#endif
 
@@ -1084,9 +1104,9 @@ void InitGame (void)
 
 	MM_Startup ();                  // so the signon screen can be freed
 
+	VW_Startup ();                  // must init SDL before SignonScreen touches framebuffer
 	SignonScreen ();
 
-	VW_Startup ();
 	IN_Startup ();
 	PM_Startup ();
 	PM_UnlockMainMem ();
@@ -1201,7 +1221,8 @@ boolean SetViewSize (unsigned width, unsigned height)
 	viewheight = height&~1;                 // must be even
 	centerx = viewwidth/2-1;
 	shootdelta = viewwidth/10;
-	screenofs = ((200-STATUSLINES-viewheight)/2*SCREENWIDTH+(320-viewwidth)/8);
+	// Flat framebuffer: screenofs is a byte offset into the 320-wide buffer
+	screenofs = ((200-STATUSLINES-viewheight)/2*320+(320-viewwidth)/2);
 
 //
 // calculate trace angles and projection constants
@@ -1476,8 +1497,26 @@ int main (int argc, char *argv[])
 {
 	int     i;
 
+	signal(SIGSEGV, crash_handler);
+	signal(SIGBUS, crash_handler);
+	signal(SIGABRT, crash_handler);
+
 	_argc = argc;
 	_argv = argv;
+
+	//
+	// Change to the executable's directory so data files are found
+	// regardless of where the user launches from
+	//
+	{
+		uint32_t pathsize = 1024;
+		char exepath[1024];
+		if (_NSGetExecutablePath(exepath, &pathsize) == 0)
+		{
+			char *dir = dirname(exepath);
+			chdir(dir);
+		}
+	}
 
 	CheckForEpisodes();
 

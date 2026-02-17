@@ -52,6 +52,7 @@ void VL_MungePic(byte *source, unsigned width, unsigned height);
 void VL_MemToLatch(byte *source, int width, int height, unsigned dest);
 void VL_ScreenToScreen(unsigned source, unsigned dest, int width, int height);
 void VL_MemToScreen(byte *source, int width, int height, int x, int y);
+void VL_PlanarToScreen(byte *source, int width, int height, int x, int y);
 void VL_LatchToScreen(unsigned source, int width, int height, int x, int y);
 void VL_ScreenToMem(byte *dest, int width, int height, int x, int y);
 

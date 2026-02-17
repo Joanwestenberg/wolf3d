@@ -1071,8 +1071,8 @@ typedef struct
 
 typedef struct
 {
-	unsigned	leftpix,rightpix;
-	unsigned	dataofs[64];
+	uint16_t	leftpix,rightpix;
+	uint16_t	dataofs[64];
 // table data after dataofs[rightpix-leftpix+1]
 }	t_compshape;
 

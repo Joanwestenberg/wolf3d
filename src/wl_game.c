@@ -222,7 +222,7 @@ void ScanInfoPlane (void)
 {
 	unsigned	x,y,i,j;
 	int			tile;
-	unsigned	far	*start;
+	uint16_t	*start;
 
 	start = mapsegs[1];
 	for (y=0;y<mapheight;y++)
@@ -625,7 +625,8 @@ void ScanInfoPlane (void)
 void SetupGameLevel (void)
 {
 	int	x,y,i;
-	unsigned	far *map,tile,spot;
+	uint16_t	*map;
+	unsigned	tile,spot;
 
 
 	if (!loadedgame)
@@ -942,7 +943,7 @@ void FinishDemoRecord (void)
 	length = demoptr - (char far *)demobuffer;
 
 	demoptr = ((char far *)demobuffer)+1;
-	*(unsigned far *)demoptr = length;
+	*(uint16_t *)demoptr = (uint16_t)length;  // demo format stores 16-bit length
 
 	CenterWindow(24,3);
 	PrintY+=6;
@@ -1065,7 +1066,7 @@ void PlayDemo (int demonumber)
 	NewGame (1,0);
 	gamestate.mapon = *demoptr++;
 	gamestate.difficulty = gd_hard;
-	length = *(unsigned *)demoptr;
+	length = *(uint16_t *)demoptr;  // demo format stores 16-bit length
 	demoptr += 2;
 	lastdemoptr = demoptr-4+length;
 

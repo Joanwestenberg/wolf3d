@@ -6,11 +6,11 @@
 
 //===========================================================================
 
-typedef struct
+typedef struct __attribute__((packed))
 {
-	long     planestart[3];
-	unsigned planelength[3];
-	unsigned width, height;
+	int32_t  planestart[3];
+	uint16_t planelength[3];
+	uint16_t width, height;
 	char     name[16];
 } maptype;
 
@@ -21,7 +21,7 @@ extern char      audioname[13];
 extern byte      *tinf;
 extern int       mapon;
 
-extern unsigned  *mapsegs[MAPPLANES];
+extern uint16_t  *mapsegs[MAPPLANES];
 extern maptype   *mapheaderseg[NUMMAPS];
 extern byte      *audiosegs[NUMSNDCHUNKS];
 extern void      *grsegs[NUMCHUNKS];
@@ -42,8 +42,8 @@ extern char      extension[5],
                  aheadname[10],
                  afilename[10];
 
-extern long      *grstarts;
-extern long      *audiostarts;
+extern int32_t   *grstarts;
+extern int32_t   *audiostarts;
 
 //
 // hooks for custom cache dialogs
@@ -67,11 +67,11 @@ boolean CA_ReadFile(char *filename, memptr *ptr);
 boolean CA_LoadFile(char *filename, memptr *ptr);
 boolean CA_WriteFile(char *filename, void *ptr, long length);
 
-long CA_RLEWCompress(unsigned *source, long length, unsigned *dest,
-  unsigned rlewtag);
+long CA_RLEWCompress(uint16_t *source, long length, uint16_t *dest,
+  uint16_t rlewtag);
 
-void CA_RLEWexpand(unsigned *source, unsigned *dest, long length,
-  unsigned rlewtag);
+void CA_RLEWexpand(uint16_t *source, uint16_t *dest, long length,
+  uint16_t rlewtag);
 
 void CA_Startup(void);
 void CA_Shutdown(void);

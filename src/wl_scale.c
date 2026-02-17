@@ -34,7 +34,7 @@ boolean     insetupscaling;
 int         stepbytwo;
 
 int         slinex, slinewidth;
-unsigned    *linecmds;
+uint16_t    *linecmds;
 long        linescale;
 unsigned    maskword;
 
@@ -131,7 +131,7 @@ void SetupScaling (int maxscaleheight)
 
 void ScaleLine (void)
 {
-    unsigned *cmdptr;
+    uint16_t *cmdptr;
     int      displayheight;
     int      toppix;
     int      x, y;
@@ -204,7 +204,7 @@ void ScaleLine (void)
                 {
                     if (x >= 0 && x < viewwidth)
                     {
-                        sdl_framebuffer[y * 320 + x] = pixel;
+                        sdl_framebuffer[(y + screenofs / 320) * 320 + (screenofs % 320) + x] = pixel;
                     }
                 }
             }
@@ -235,7 +235,7 @@ void ScaleShape (int xcenter, int shapenum, unsigned height)
 {
     t_compshape *shape;
     unsigned     scale, srcx, stopx;
-    unsigned    *cmdptr;
+    uint16_t    *cmdptr;
     boolean      leftvis, rightvis;
     int          displayheight;
     long         frac, step;
@@ -279,7 +279,7 @@ void ScaleShape (int xcenter, int shapenum, unsigned height)
             continue;
         }
 
-        linecmds = (unsigned *)((byte *)shape + *cmdptr);
+        linecmds = (uint16_t *)((byte *)shape + *cmdptr);
         cmdptr--;
 
         if (slinewidth == 1)
@@ -371,7 +371,7 @@ void ScaleShape (int xcenter, int shapenum, unsigned height)
             continue;
         }
 
-        linecmds = (unsigned *)((byte *)shape + *cmdptr);
+        linecmds = (uint16_t *)((byte *)shape + *cmdptr);
         cmdptr++;
 
         if (slinewidth == 1)
@@ -450,7 +450,7 @@ void SimpleScaleShape (int xcenter, int shapenum, unsigned height)
 {
     t_compshape *shape;
     unsigned     scale, srcx, stopx;
-    unsigned    *cmdptr;
+    uint16_t    *cmdptr;
     int          displayheight;
     long         step;
 
@@ -484,7 +484,7 @@ void SimpleScaleShape (int xcenter, int shapenum, unsigned height)
             continue;
         }
 
-        linecmds = (unsigned *)((byte *)shape + *cmdptr);
+        linecmds = (uint16_t *)((byte *)shape + *cmdptr);
         cmdptr--;
 
         slinex -= slinewidth;
@@ -520,7 +520,7 @@ void SimpleScaleShape (int xcenter, int shapenum, unsigned height)
             continue;
         }
 
-        linecmds = (unsigned *)((byte *)shape + *cmdptr);
+        linecmds = (uint16_t *)((byte *)shape + *cmdptr);
         cmdptr++;
 
         ScaleLine();

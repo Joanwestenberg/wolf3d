@@ -5,6 +5,23 @@
 //
 ////////////////////////////////////////////////////////////////////
 #include "wl_def.h"
+#include <ctype.h>
+
+// Case-insensitive file existence check for macOS
+static int access_ci(const char *path, int mode)
+{
+	char buf[64];
+	int i;
+	if (access(path, mode) == 0) return 0;
+	for (i = 0; path[i] && i < 63; i++)
+		buf[i] = tolower((unsigned char)path[i]);
+	buf[i] = '\0';
+	if (access(buf, mode) == 0) return 0;
+	for (i = 0; path[i] && i < 63; i++)
+		buf[i] = toupper((unsigned char)path[i]);
+	buf[i] = '\0';
+	return access(buf, mode);
+}
 
 // DOS mouse interrupt replacement
 #define MDelta 0
@@ -3869,11 +3886,11 @@ void CheckForEpisodes(void)
 //
 #ifdef JAPAN
 #ifdef JAPDEMO
-	if (access("VSWAP.WJ1",F_OK)==0)
+	if (access_ci("VSWAP.WJ1",F_OK)==0)
 	{
 		strcpy(extension,"WJ1");
 #else
-	if (access("VSWAP.WJ6",F_OK)==0)
+	if (access_ci("VSWAP.WJ6",F_OK)==0)
 	{
 		strcpy(extension,"WJ6");
 #endif
@@ -3897,7 +3914,7 @@ void CheckForEpisodes(void)
 //
 #ifndef UPLOAD
 #ifndef SPEAR
-	if (access("VSWAP.WL6",F_OK)==0)
+	if (access_ci("VSWAP.WL6",F_OK)==0)
 	{
 		strcpy(extension,"WL6");
 		NewEmenu[2].active =
@@ -3912,7 +3929,7 @@ void CheckForEpisodes(void)
 		EpisodeSelect[5] = 1;
 	}
 	else
-	if (access("VSWAP.WL3",F_OK)==0)
+	if (access_ci("VSWAP.WL3",F_OK)==0)
 	{
 		strcpy(extension,"WL3");
 		NewEmenu[2].active =
@@ -3928,14 +3945,14 @@ void CheckForEpisodes(void)
 
 #ifdef SPEAR
 #ifndef SPEARDEMO
-	if (access("VSWAP.SOD",F_OK)==0)
+	if (access_ci("VSWAP.SOD",F_OK)==0)
 	{
 		strcpy(extension,"SOD");
 	}
 	else
 		Quit("NO SPEAR OF DESTINY DATA FILES TO BE FOUND!");
 #else
-	if (access("VSWAP.SDM",F_OK)==0)
+	if (access_ci("VSWAP.SDM",F_OK)==0)
 	{
 		strcpy(extension,"SDM");
 	}
@@ -3944,12 +3961,15 @@ void CheckForEpisodes(void)
 #endif
 
 #else
-	if (access("VSWAP.WL1",F_OK)==0)
+	if (extension[0] == '\0')  // not already set by WL6/WL3 check above
 	{
-		strcpy(extension,"WL1");
+		if (access_ci("VSWAP.WL1",F_OK)==0)
+		{
+			strcpy(extension,"WL1");
+		}
+		else
+			Quit("NO WOLFENSTEIN 3-D DATA FILES to be found!");
 	}
-	else
-		Quit("NO WOLFENSTEIN 3-D DATA FILES to be found!");
 #endif
 
 	strcat(configname,extension);

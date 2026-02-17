@@ -100,6 +100,7 @@ void VL_Shutdown(void)
 	if (sdl_texture)  { SDL_DestroyTexture(sdl_texture);   sdl_texture = NULL; }
 	if (sdl_renderer) { SDL_DestroyRenderer(sdl_renderer); sdl_renderer = NULL; }
 	if (sdl_window)   { SDL_DestroyWindow(sdl_window);     sdl_window = NULL; }
+	SDL_Quit();
 }
 
 //==========================================================================
@@ -266,6 +267,10 @@ void VL_FadeOut(int start, int end, int red, int green, int blue, int steps)
 void VL_FadeIn(int start, int end, byte *palette, int steps)
 {
 	int i, j;
+	SDL_Color origpal[256];
+
+	// Save starting palette so we interpolate from fixed values
+	memcpy(origpal, sdl_palette, sizeof(origpal));
 
 	for (i = 0; i < steps; i++)
 	{
@@ -275,9 +280,9 @@ void VL_FadeIn(int start, int end, byte *palette, int steps)
 			int target_g = palette[j * 3 + 1] * 255 / 63;
 			int target_b = palette[j * 3 + 2] * 255 / 63;
 
-			sdl_palette[j].r = sdl_palette[j].r + (target_r - sdl_palette[j].r) * (i + 1) / steps;
-			sdl_palette[j].g = sdl_palette[j].g + (target_g - sdl_palette[j].g) * (i + 1) / steps;
-			sdl_palette[j].b = sdl_palette[j].b + (target_b - sdl_palette[j].b) * (i + 1) / steps;
+			sdl_palette[j].r = origpal[j].r + (target_r - origpal[j].r) * (i + 1) / steps;
+			sdl_palette[j].g = origpal[j].g + (target_g - origpal[j].g) * (i + 1) / steps;
+			sdl_palette[j].b = origpal[j].b + (target_b - origpal[j].b) * (i + 1) / steps;
 		}
 		UpdateRGBAPalette();
 		VL_Present();
@@ -394,7 +399,22 @@ void VL_ScreenToScreen(unsigned source, unsigned dest, int width, int height)
 
 void VL_MemToScreen(byte *source, int width, int height, int x, int y)
 {
-	// Copy de-interleaved (planar) data to screen
+	// After VL_MungePic, data is already in linear pixel order
+	int py;
+
+	for (py = 0; py < height; py++)
+	{
+		if (y + py < 200)
+			memcpy(&sdl_framebuffer[(y + py) * 320 + x],
+				   &source[py * width],
+				   (x + width <= 320) ? width : 320 - x);
+	}
+}
+
+void VL_PlanarToScreen(byte *source, int width, int height, int x, int y)
+{
+	// De-interleave VGA planar data (plane-sequential) to linear framebuffer
+	// Used for cached graphics that haven't been through VL_MungePic
 	int plane, px, py;
 	int planewidth = width / 4;
 
@@ -416,15 +436,15 @@ void VL_MemToScreen(byte *source, int width, int height, int x, int y)
 
 void VL_LatchToScreen(unsigned source, int width, int height, int x, int y)
 {
-	// Copy from latch memory to screen
-	int w = width * 4; // width in Mode X words -> pixels
+	// Copy from latch memory (linear pixel format) to screen
+	// width is in pixels (NOT Mode X bytes)
 	int py;
 	for (py = 0; py < height; py++)
 	{
-		int srcoff = source + py * w;
+		int srcoff = source + py * width;
 		int dstoff = (y + py) * 320 + x;
-		if (srcoff + w <= VL_LATCHMEM_SIZE && dstoff + w <= 320 * 200)
-			memcpy(&sdl_framebuffer[dstoff], &vl_latchmem[srcoff], w);
+		if (srcoff + width <= VL_LATCHMEM_SIZE && dstoff + width <= 320 * 200)
+			memcpy(&sdl_framebuffer[dstoff], &vl_latchmem[srcoff], width);
 	}
 }
 

@@ -359,7 +359,7 @@ void ScalePost (void)
 	byte	*src;
 	byte	col;
 
-	height = wallheight[postx] >> 3;  // height in pixels (wallheight has 3 fractional bits)
+	height = wallheight[postx] >> 2;  // height in pixels (wallheight has 2 fractional bits)
 	if (height <= 0)
 		return;
 
@@ -399,7 +399,7 @@ void ScalePost (void)
 		for (x = postx; x < (int)(postx + postwidth); x++)
 		{
 			if (x >= 0 && x < viewwidth)
-				sdl_framebuffer[(y + screenofs / 320) * 320 + x] = col;
+				sdl_framebuffer[(y + screenofs / 320) * 320 + (screenofs % 320) + x] = col;
 		}
 
 		srcfrac += srcstep;
@@ -853,13 +853,14 @@ void VGAClearScreen (void)
 	int x, y;
 	int halfheight = viewheight / 2;
 	int ybase = screenofs / 320;  // vertical offset in the framebuffer
+	int xbase = screenofs % 320;  // horizontal offset in the framebuffer
 
 	// draw ceiling (top half)
 	for (y = 0; y < halfheight; y++)
 	{
 		for (x = 0; x < viewwidth; x++)
 		{
-			sdl_framebuffer[(ybase + y) * 320 + x] = ceilingcolor;
+			sdl_framebuffer[(ybase + y) * 320 + xbase + x] = ceilingcolor;
 		}
 	}
 
@@ -868,7 +869,7 @@ void VGAClearScreen (void)
 	{
 		for (x = 0; x < viewwidth; x++)
 		{
-			sdl_framebuffer[(ybase + y) * 320 + x] = floorcolor;
+			sdl_framebuffer[(ybase + y) * 320 + xbase + x] = floorcolor;
 		}
 	}
 }
@@ -1109,6 +1110,8 @@ void CalcTics (void)
 	{
 		newtime = TimeCount;
 		tics = newtime-lasttimecount;
+		if (!tics)
+			SDL_Delay(1);		// yield CPU while waiting for next tick
 	} while (!tics);			// make sure at least one tic passes
 
 	lasttimecount = newtime;

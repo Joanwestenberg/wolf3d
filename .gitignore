@@ -1,0 +1,20 @@
+# Build artifacts
+obj/
+wolf3d
+*.o
+*.dSYM/
+
+# macOS
+.DS_Store
+
+# Game data files (not part of source)
+*.WL6
+*.WL1
+*.WL3
+*.SOD
+*.SDM
+*.wl6
+*.wl1
+*.wl3
+*.sod
+*.sdm

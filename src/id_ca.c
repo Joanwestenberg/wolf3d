@@ -18,8 +18,46 @@ loaded into the data segment
 #include "id_heads.h"
 
 #include <stdint.h>
+#include <ctype.h>
 
 #define THREEBYTEGRSTARTS
+
+/*
+=====================
+=
+= CAL_OpenCaseInsensitive
+=
+= Try to open a file trying original case, then lowercase, then uppercase.
+= macOS default APFS is case-insensitive, but case-sensitive volumes exist.
+=
+=====================
+*/
+static int CAL_OpenCaseInsensitive(const char *filename, int flags, int mode)
+{
+	int handle;
+	char buf[64];
+	int i;
+
+	// Try as-is first
+	handle = open(filename, flags, mode);
+	if (handle != -1)
+		return handle;
+
+	// Try lowercase
+	for (i = 0; filename[i] && i < 63; i++)
+		buf[i] = tolower((unsigned char)filename[i]);
+	buf[i] = '\0';
+	handle = open(buf, flags, mode);
+	if (handle != -1)
+		return handle;
+
+	// Try uppercase
+	for (i = 0; filename[i] && i < 63; i++)
+		buf[i] = toupper((unsigned char)filename[i]);
+	buf[i] = '\0';
+	handle = open(buf, flags, mode);
+	return handle;
+}
 
 /*
 =============================================================================
@@ -35,10 +73,10 @@ typedef struct
 } huffnode;
 
 
-typedef struct
+typedef struct __attribute__((packed))
 {
-	unsigned	RLEWtag;
-	long		headeroffsets[100];
+	uint16_t	RLEWtag;
+	int32_t		headeroffsets[100];
 	byte		tileinfo[];
 } mapfiletype;
 
@@ -54,7 +92,7 @@ typedef struct
 byte 		*tinf;
 int			mapon;
 
-unsigned	*mapsegs[MAPPLANES];
+uint16_t	*mapsegs[MAPPLANES];
 maptype		*mapheaderseg[NUMMAPS];
 byte		*audiosegs[NUMSNDCHUNKS];
 void		*grsegs[NUMCHUNKS];
@@ -85,8 +123,8 @@ char extension[5],	// Need a string, not constant to change cache files
 
 void CA_CannotOpen(char *string);
 
-long		*grstarts;	// array of offsets in egagraph, -1 for sparse
-long		*audiostarts;	// array of offsets in audio / audiot
+int32_t		*grstarts;	// array of offsets in egagraph, -1 for sparse (32-bit in data files)
+int32_t		*audiostarts;	// array of offsets in audio / audiot (32-bit in data files)
 
 huffnode	grhuffman[255];
 huffnode	audiohuffman[255];
@@ -96,13 +134,14 @@ int			grhandle;		// handle to EGAGRAPH
 int			maphandle;		// handle to MAPTEMP / GAMEMAPS
 int			audiohandle;	// handle to AUDIOT / AUDIO
 
-long		chunkcomplen,chunkexplen;
+long		chunkcomplen;
+int32_t		chunkexplen;  // 4 bytes in data files; must not be long (8 bytes on 64-bit)
 
 SDMode		oldsoundmode;
 
 
 
-void	CAL_CarmackExpand (unsigned *source, unsigned *dest,
+void	CAL_CarmackExpand (uint16_t *source, uint16_t *dest,
 		unsigned length);
 
 
@@ -418,10 +457,10 @@ void CAL_HuffExpand (byte *source, byte *dest,
 #define NEARTAG	0xa7
 #define FARTAG	0xa8
 
-void CAL_CarmackExpand (unsigned *source, unsigned *dest, unsigned length)
+void CAL_CarmackExpand (uint16_t *source, uint16_t *dest, unsigned length)
 {
-	unsigned	ch,chhigh,count,offset;
-	unsigned	*copyptr, *inptr, *outptr;
+	uint16_t	ch,chhigh,count,offset;
+	uint16_t	*copyptr, *inptr, *outptr;
 	byte		*bptr;
 
 	length/=2;
@@ -440,7 +479,7 @@ void CAL_CarmackExpand (unsigned *source, unsigned *dest, unsigned length)
 			{				// have to insert a word containing the tag byte
 				bptr = (byte *)inptr;
 				ch |= *bptr++;
-				inptr = (unsigned *)bptr;
+				inptr = (uint16_t *)bptr;
 				*outptr++ = ch;
 				length--;
 			}
@@ -448,7 +487,7 @@ void CAL_CarmackExpand (unsigned *source, unsigned *dest, unsigned length)
 			{
 				bptr = (byte *)inptr;
 				offset = *bptr++;
-				inptr = (unsigned *)bptr;
+				inptr = (uint16_t *)bptr;
 				copyptr = outptr - offset;
 				length -= count;
 				while (count--)
@@ -462,7 +501,7 @@ void CAL_CarmackExpand (unsigned *source, unsigned *dest, unsigned length)
 			{				// have to insert a word containing the tag byte
 				bptr = (byte *)inptr;
 				ch |= *bptr++;
-				inptr = (unsigned *)bptr;
+				inptr = (uint16_t *)bptr;
 				*outptr++ = ch;
 				length --;
 			}
@@ -493,12 +532,12 @@ void CAL_CarmackExpand (unsigned *source, unsigned *dest, unsigned length)
 ======================
 */
 
-long CA_RLEWCompress (unsigned *source, long length, unsigned *dest,
-  unsigned rlewtag)
+long CA_RLEWCompress (uint16_t *source, long length, uint16_t *dest,
+  uint16_t rlewtag)
 {
   long complength;
-  unsigned value,count,i;
-  unsigned *start, *end;
+  uint16_t value,count,i;
+  uint16_t *start, *end;
 
   start = dest;
 
@@ -550,11 +589,11 @@ long CA_RLEWCompress (unsigned *source, long length, unsigned *dest,
 ======================
 */
 
-void CA_RLEWexpand (unsigned *source, unsigned *dest, long length,
-  unsigned rlewtag)
+void CA_RLEWexpand (uint16_t *source, uint16_t *dest, long length,
+  uint16_t rlewtag)
 {
-  unsigned value,count,i;
-  unsigned *end;
+  uint16_t value,count,i;
+  uint16_t *end;
 
   end = dest + (length)/2;
 
@@ -615,7 +654,7 @@ void CAL_SetupGrFile (void)
 	strcpy(fname,gdictname);
 	strcat(fname,extension);
 
-	if ((handle = open(fname,
+	if ((handle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 
@@ -627,12 +666,12 @@ void CAL_SetupGrFile (void)
 //
 	temp = NULL;
 	MM_GetPtr (&temp,(NUMCHUNKS+1)*FILEPOSSIZE);
-	grstarts = (long *)temp;
+	grstarts = (int32_t *)temp;
 
 	strcpy(fname,gheadname);
 	strcat(fname,extension);
 
-	if ((handle = open(fname,
+	if ((handle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 
@@ -646,7 +685,7 @@ void CAL_SetupGrFile (void)
 	strcpy(fname,gfilename);
 	strcat(fname,extension);
 
-	grhandle = open(fname, O_RDONLY | O_BINARY);
+	grhandle = CAL_OpenCaseInsensitive(fname, O_RDONLY | O_BINARY, S_IREAD);
 	if (grhandle == -1)
 		CA_CannotOpen(fname);
 
@@ -690,7 +729,7 @@ void CAL_SetupMapFile (void)
 	strcpy(fname,mheadname);
 	strcat(fname,extension);
 
-	if ((handle = open(fname,
+	if ((handle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 
@@ -710,14 +749,14 @@ void CAL_SetupMapFile (void)
 	strcpy(fname,"GAMEMAPS.");
 	strcat(fname,extension);
 
-	if ((maphandle = open(fname,
+	if ((maphandle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 #else
 	strcpy(fname,mfilename);
 	strcat(fname,extension);
 
-	if ((maphandle = open(fname,
+	if ((maphandle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 #endif
@@ -746,7 +785,7 @@ void CAL_SetupMapFile (void)
 	{
 		temp = NULL;
 		MM_GetPtr (&temp,64*64*2);
-		mapsegs[i] = (unsigned *)temp;
+		mapsegs[i] = (uint16_t *)temp;
 		MM_SetLock ((memptr *)&mapsegs[i],true);
 	}
 }
@@ -776,7 +815,7 @@ void CAL_SetupAudioFile (void)
 	strcpy(fname,aheadname);
 	strcat(fname,extension);
 
-	if ((handle = open(fname,
+	if ((handle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 
@@ -785,7 +824,7 @@ void CAL_SetupAudioFile (void)
 
 	temp = NULL;
 	MM_GetPtr (&temp,length);
-	audiostarts = (long *)temp;
+	audiostarts = (int32_t *)temp;
 	CA_FarRead(handle, (byte *)audiostarts, length);
 	close(handle);
 
@@ -795,7 +834,7 @@ void CAL_SetupAudioFile (void)
 	strcpy(fname,afilename);
 	strcat(fname,extension);
 
-	if ((audiohandle = open(fname,
+	if ((audiohandle = CAL_OpenCaseInsensitive(fname,
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		CA_CannotOpen(fname);
 }
@@ -990,7 +1029,7 @@ void CAL_ExpandGrChunk (int chunk, byte *source)
 	//
 	// everything else has an explicit size longword
 	//
-		expanded = *(long *)source;
+		expanded = *(int32_t *)source;  // data files store 32-bit sizes
 		source += 4;			// skip over length
 	}
 
@@ -1105,19 +1144,35 @@ void CA_CacheScreen (int chunk)
 	CA_FarRead(grhandle,(byte *)bigbufferseg,compressed);
 	source = (byte *)bigbufferseg;
 
-	expanded = *(long *)source;
+	expanded = *(int32_t *)source;  // data files store 32-bit sizes
 	source += 4;			// skip over length
 
 //
-// Decompress into a temp buffer, then copy to framebuffer.
-// The original code wrote directly to VGA planar memory via screenhack;
-// we decompress flat and memcpy to sdl_framebuffer instead.
+// Decompress into a temp buffer, then de-interleave VGA planar data
+// to the linear framebuffer.  The decompressed data is 4 sequential
+// planes of 80x200 bytes (plane 0, plane 1, plane 2, plane 3).
 //
 	MM_GetPtr(&tempbuf, expanded);
 	CAL_HuffExpand (source, (byte *)tempbuf, expanded, grhuffman, false);
 
 	if (sdl_framebuffer)
-		memcpy(sdl_framebuffer, tempbuf, (size_t)expanded);
+	{
+		byte *src = (byte *)tempbuf;
+		int plane, px, py;
+		int planesize = 80 * 200;  // 320/4 * 200
+
+		for (plane = 0; plane < 4; plane++)
+		{
+			for (py = 0; py < 200; py++)
+			{
+				for (px = 0; px < 80; px++)
+				{
+					sdl_framebuffer[py * 320 + px * 4 + plane] =
+						src[plane * planesize + py * 80 + px];
+				}
+			}
+		}
+	}
 
 	MM_FreePtr(&tempbuf);
 
@@ -1143,7 +1198,7 @@ void CA_CacheMap (int mapnum)
 	int		plane;
 	memptr	*dest,bigbufferseg;
 	unsigned	size;
-	unsigned	*source;
+	uint16_t	*source;
 #ifdef CARMACIZED
 	memptr	buffer2seg;
 	long	expanded;
@@ -1165,12 +1220,12 @@ void CA_CacheMap (int mapnum)
 
 		lseek(maphandle,pos,SEEK_SET);
 		if (compressed<=BUFFERSIZE)
-			source = (unsigned *)bufferseg;
+			source = (uint16_t *)bufferseg;
 		else
 		{
 			MM_GetPtr(&bigbufferseg,compressed);
 			MM_SetLock (&bigbufferseg,true);
-			source = (unsigned *)bigbufferseg;
+			source = (uint16_t *)bigbufferseg;
 		}
 
 		CA_FarRead(maphandle,(byte *)source,compressed);
@@ -1181,11 +1236,11 @@ void CA_CacheMap (int mapnum)
 		// The resulting RLEW chunk also does, even though it's not really
 		// needed
 		//
-		expanded = *source;
-		source++;
+		expanded = *source;   // 16-bit expanded length
+		source++;             // advance past 16-bit length
 		MM_GetPtr (&buffer2seg,expanded);
-		CAL_CarmackExpand (source, (unsigned *)buffer2seg,expanded);
-		CA_RLEWexpand (((unsigned *)buffer2seg)+1,*dest,size,
+		CAL_CarmackExpand (source, (uint16_t *)buffer2seg,expanded);
+		CA_RLEWexpand (((uint16_t *)buffer2seg)+1,(uint16_t *)*dest,size,
 		((mapfiletype *)tinf)->RLEWtag);
 		MM_FreePtr (&buffer2seg);
 
@@ -1193,7 +1248,7 @@ void CA_CacheMap (int mapnum)
 		//
 		// unRLEW, skipping expanded length
 		//
-		CA_RLEWexpand (source+1, *dest,size,
+		CA_RLEWexpand (source+1, (uint16_t *)*dest,size,
 		((mapfiletype *)tinf)->RLEWtag);
 #endif
 

@@ -18,7 +18,7 @@
 
 typedef struct
 {
-	int width,
+	int16_t width,
 	    height,
 	    orgx, orgy,
 	    xl, yl, xh, yh,
@@ -27,21 +27,21 @@ typedef struct
 
 typedef struct
 {
-	unsigned sourceoffset[MAXSHIFTS];
-	unsigned planesize[MAXSHIFTS];
-	unsigned width[MAXSHIFTS];
+	uint16_t sourceoffset[MAXSHIFTS];
+	uint16_t planesize[MAXSHIFTS];
+	uint16_t width[MAXSHIFTS];
 	byte     data[];
 } spritetype;
 
 typedef struct
 {
-	int width, height;
+	int16_t width, height;  // 16-bit in data files
 } pictabletype;
 
 typedef struct
 {
-	int height;
-	int location[256];
+	int16_t height;        // 16-bit in data files
+	int16_t location[256]; // 16-bit offsets in data files
 	char width[256];
 } fontstruct;
 
@@ -110,8 +110,8 @@ void VW_MeasurePropString(char *string, word *width, word *height);
 #define EGAMAPMASK(x)   VGAMAPMASK(x)
 #define EGAWRITEMODE(x) VGAWRITEMODE(x)
 
-#define LatchDrawChar(x,y,p) VL_LatchToScreen(latchpics[0]+(p)*16,2,8,x,y)
-#define LatchDrawTile(x,y,p) VL_LatchToScreen(latchpics[1]+(p)*64,4,16,x,y)
+#define LatchDrawChar(x,y,p) VL_LatchToScreen(latchpics[0]+(p)*64,8,8,x,y)
+#define LatchDrawTile(x,y,p) VL_LatchToScreen(latchpics[1]+(p)*256,16,16,x,y)
 
 void LatchDrawPic(unsigned x, unsigned y, unsigned picnum);
 void LoadLatchMem(void);
