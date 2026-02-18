@@ -78,6 +78,8 @@ void	ThreeDRefresh (void);
 int		lastside;		// true for vertical
 long	lastintercept;
 int		lasttilehit;
+byte	*lastpostpagebase;	// base pointer for current wall texture page
+unsigned lasttexture;		// texture offset within the page
 
 
 //
@@ -439,7 +441,7 @@ void HitVertWall (void)
 	if (lastside==1 && lastintercept == xtile && lasttilehit == tilehit)
 	{
 		// in the same wall type as last time, so check for optimized draw
-		if (texture == (unsigned)((uintptr_t)postsource & 0xFFF))
+		if (texture == lasttexture)
 		{
 		// wide scale
 			postwidth++;
@@ -449,9 +451,8 @@ void HitVertWall (void)
 		else
 		{
 			ScalePost ();
-			postsource = (byte *)PM_GetPage(wallpic) + texture;
-			// wallpic not set here -- reuse the page base from postsource
-			postsource = (byte *)((uintptr_t)postsource & ~0xFFFUL) + texture;
+			postsource = lastpostpagebase + texture;
+			lasttexture = texture;
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -480,7 +481,9 @@ void HitVertWall (void)
 		else
 			wallpic = vertwall[tilehit];
 
-		postsource = (byte *)PM_GetPage(wallpic) + texture;
+		lastpostpagebase = (byte *)PM_GetPage(wallpic);
+		lasttexture = texture;
+		postsource = lastpostpagebase + texture;
 	}
 }
 
@@ -511,7 +514,7 @@ void HitHorizWall (void)
 	if (lastside==0 && lastintercept == ytile && lasttilehit == tilehit)
 	{
 		// in the same wall type as last time, so check for optimized draw
-		if (texture == (unsigned)((uintptr_t)postsource & 0xFFF))
+		if (texture == lasttexture)
 		{
 		// wide scale
 			postwidth++;
@@ -521,7 +524,8 @@ void HitHorizWall (void)
 		else
 		{
 			ScalePost ();
-			postsource = (byte *)((uintptr_t)postsource & ~0xFFFUL) + texture;
+			postsource = lastpostpagebase + texture;
+			lasttexture = texture;
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -550,7 +554,9 @@ void HitHorizWall (void)
 		else
 			wallpic = horizwall[tilehit];
 
-		postsource = (byte *)PM_GetPage(wallpic) + texture;
+		lastpostpagebase = (byte *)PM_GetPage(wallpic);
+		lasttexture = texture;
+		postsource = lastpostpagebase + texture;
 	}
 
 }
@@ -577,7 +583,7 @@ void HitHorizDoor (void)
 	if (lasttilehit == tilehit)
 	{
 	// in the same door as last time, so check for optimized draw
-		if (texture == (unsigned)((uintptr_t)postsource & 0xFFF))
+		if (texture == lasttexture)
 		{
 		// wide scale
 			postwidth++;
@@ -587,7 +593,8 @@ void HitHorizDoor (void)
 		else
 		{
 			ScalePost ();
-			postsource = (byte *)((uintptr_t)postsource & ~0xFFFUL) + texture;
+			postsource = lastpostpagebase + texture;
+			lasttexture = texture;
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -618,7 +625,9 @@ void HitHorizDoor (void)
 			break;
 		}
 
-		postsource = (byte *)PM_GetPage(doorpage) + texture;
+		lastpostpagebase = (byte *)PM_GetPage(doorpage);
+		lasttexture = texture;
+		postsource = lastpostpagebase + texture;
 	}
 }
 
@@ -644,7 +653,7 @@ void HitVertDoor (void)
 	if (lasttilehit == tilehit)
 	{
 	// in the same door as last time, so check for optimized draw
-		if (texture == (unsigned)((uintptr_t)postsource & 0xFFF))
+		if (texture == lasttexture)
 		{
 		// wide scale
 			postwidth++;
@@ -654,7 +663,8 @@ void HitVertDoor (void)
 		else
 		{
 			ScalePost ();
-			postsource = (byte *)((uintptr_t)postsource & ~0xFFFUL) + texture;
+			postsource = lastpostpagebase + texture;
+			lasttexture = texture;
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -685,7 +695,9 @@ void HitVertDoor (void)
 			break;
 		}
 
-		postsource = (byte *)PM_GetPage(doorpage+1) + texture;
+		lastpostpagebase = (byte *)PM_GetPage(doorpage+1);
+		lasttexture = texture;
+		postsource = lastpostpagebase + texture;
 	}
 }
 
@@ -722,7 +734,7 @@ void HitHorizPWall (void)
 	if (lasttilehit == tilehit)
 	{
 		// in the same wall type as last time, so check for optimized draw
-		if (texture == (unsigned)((uintptr_t)postsource & 0xFFF))
+		if (texture == lasttexture)
 		{
 		// wide scale
 			postwidth++;
@@ -732,7 +744,8 @@ void HitHorizPWall (void)
 		else
 		{
 			ScalePost ();
-			postsource = (byte *)((uintptr_t)postsource & ~0xFFFUL) + texture;
+			postsource = lastpostpagebase + texture;
+			lasttexture = texture;
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -749,7 +762,9 @@ void HitHorizPWall (void)
 
 		wallpic = horizwall[tilehit&63];
 
-		postsource = (byte *)PM_GetPage(wallpic) + texture;
+		lastpostpagebase = (byte *)PM_GetPage(wallpic);
+		lasttexture = texture;
+		postsource = lastpostpagebase + texture;
 	}
 
 }
@@ -785,7 +800,7 @@ void HitVertPWall (void)
 	if (lasttilehit == tilehit)
 	{
 		// in the same wall type as last time, so check for optimized draw
-		if (texture == (unsigned)((uintptr_t)postsource & 0xFFF))
+		if (texture == lasttexture)
 		{
 		// wide scale
 			postwidth++;
@@ -795,7 +810,8 @@ void HitVertPWall (void)
 		else
 		{
 			ScalePost ();
-			postsource = (byte *)((uintptr_t)postsource & ~0xFFFUL) + texture;
+			postsource = lastpostpagebase + texture;
+			lasttexture = texture;
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -812,7 +828,9 @@ void HitVertPWall (void)
 
 		wallpic = vertwall[tilehit&63];
 
-		postsource = (byte *)PM_GetPage(wallpic) + texture;
+		lastpostpagebase = (byte *)PM_GetPage(wallpic);
+		lasttexture = texture;
+		postsource = lastpostpagebase + texture;
 	}
 
 }

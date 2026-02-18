@@ -72,7 +72,7 @@ void VWB_DrawPic(int x, int y, int chunknum)
 	if (chunknum < 0 || !pictable || !grsegs[chunknum])
 		return;
 
-	picwidth = pictable[chunknum - STARTPICS].width;
+	picwidth = pictable[chunknum - STARTPICS].width * 4;  // Mode X bytes -> pixels
 	picheight = pictable[chunknum - STARTPICS].height;
 
 	VL_PlanarToScreen((byte *)grsegs[chunknum], picwidth, picheight, x & ~7, y);
@@ -198,7 +198,7 @@ void LatchDrawPic(unsigned x, unsigned y, unsigned picnum)
 
 	source = latchpics[2 + picnum - LATCHPICS_LUMP_START];
 	VL_LatchToScreen(source,
-		pictable[picnum - STARTPICS].width,
+		pictable[picnum - STARTPICS].width * 4,  // Mode X bytes -> pixels
 		pictable[picnum - STARTPICS].height,
 		x * 8, y);
 }
@@ -238,7 +238,7 @@ void LoadLatchMem(void)
 		CA_CacheGrChunk(i);
 		if (grsegs[i])
 		{
-			picwidth = pictable[i - STARTPICS].width;
+			picwidth = pictable[i - STARTPICS].width * 4;  // Mode X bytes -> pixels
 			picheight = pictable[i - STARTPICS].height;
 			VL_MemToLatch((byte *)grsegs[i], picwidth, picheight, destoff);
 			destoff += picwidth * picheight;

@@ -310,14 +310,22 @@ void VL_Plot(int x, int y, int color)
 
 void VL_Hlin(unsigned x, unsigned y, unsigned width, unsigned color)
 {
-	if (y < 200)
-		memset(&sdl_framebuffer[y * 320 + x], color, width);
+	if (y >= 200 || x >= 320)
+		return;
+	if (x + width > 320)
+		width = 320 - x;
+	memset(&sdl_framebuffer[y * 320 + x], color, width);
 }
 
 void VL_Vlin(int x, int y, int height, int color)
 {
 	int i;
-	byte *dest = &sdl_framebuffer[y * 320 + x];
+	byte *dest;
+	if (x < 0 || x >= 320 || y < 0)
+		return;
+	if (y + height > 200)
+		height = 200 - y;
+	dest = &sdl_framebuffer[y * 320 + x];
 	for (i = 0; i < height; i++, dest += 320)
 		*dest = color;
 }
@@ -325,7 +333,16 @@ void VL_Vlin(int x, int y, int height, int color)
 void VL_Bar(int x, int y, int width, int height, int color)
 {
 	int i;
-	byte *dest = &sdl_framebuffer[y * 320 + x];
+	byte *dest;
+	if (x < 0 || y < 0)
+		return;
+	if (x + width > 320)
+		width = 320 - x;
+	if (y + height > 200)
+		height = 200 - y;
+	if (width <= 0 || height <= 0)
+		return;
+	dest = &sdl_framebuffer[y * 320 + x];
 	for (i = 0; i < height; i++, dest += 320)
 		memset(dest, color, width);
 }

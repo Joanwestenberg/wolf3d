@@ -244,19 +244,9 @@ void ControlMovement (objtype *ob)
 
 void StatusDrawPic (unsigned x, unsigned y, unsigned picnum)
 {
-	unsigned	temp;
-
-	temp = bufferofs;
-	bufferofs = 0;
-
-	bufferofs = PAGE1START+(200-STATUSLINES)*SCREENWIDTH;
-	LatchDrawPic (x,y,picnum);
-	bufferofs = PAGE2START+(200-STATUSLINES)*SCREENWIDTH;
-	LatchDrawPic (x,y,picnum);
-	bufferofs = PAGE3START+(200-STATUSLINES)*SCREENWIDTH;
-	LatchDrawPic (x,y,picnum);
-
-	bufferofs = temp;
+	// In the SDL2 port, bufferofs is unused by drawing functions.
+	// Offset y to the status bar's absolute screen position.
+	LatchDrawPic (x, y + (200 - STATUSLINES), picnum);
 }
 
 
