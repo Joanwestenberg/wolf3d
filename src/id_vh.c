@@ -262,9 +262,38 @@ boolean FizzleFade(unsigned source, unsigned dest,
 	int p;
 	unsigned x, y;
 	longword lastframe;
+	byte *newscreen;
+	int destx, desty;
 
 	(void)source;
-	(void)dest;
+
+	// Compute the top-left corner of the dest region in the framebuffer
+	desty = dest / 320;
+	destx = dest % 320;
+
+	// Save the new content that's already in the framebuffer
+	newscreen = (byte *)malloc(width * height);
+	if (!newscreen)
+		return false;
+
+	for (y = 0; y < height; y++)
+	{
+		int sy = desty + y;
+		if (sy < 200)
+			memcpy(&newscreen[y * width],
+				   &sdl_framebuffer[sy * 320 + destx],
+				   (destx + width <= 320) ? width : 320 - destx);
+	}
+
+	// Fill the dest region with black to start the dissolve
+	for (y = 0; y < height; y++)
+	{
+		int sy = desty + y;
+		if (sy < 200)
+			memset(&sdl_framebuffer[sy * 320 + destx], 0,
+				   (destx + width <= 320) ? width : 320 - destx);
+	}
+	VL_Present();
 
 	pixperframe = (width * height) / frames;
 	lastframe = TimeCount;
@@ -275,12 +304,25 @@ boolean FizzleFade(unsigned source, unsigned dest,
 		{
 			IN_PumpEvents();
 			if (LastScan)
+			{
+				// Reveal remaining pixels immediately
+				for (y = 0; y < height; y++)
+				{
+					int sy = desty + y;
+					if (sy < 200)
+						memcpy(&sdl_framebuffer[sy * 320 + destx],
+							   &newscreen[y * width],
+							   (destx + width <= 320) ? width : 320 - destx);
+				}
+				free(newscreen);
+				VL_Present();
 				return true;
+			}
 		}
 
 		for (p = 0; p < (int)pixperframe; p++)
 		{
-			// Galois LFSR for 320x200 (0-63999)
+			// Galois LFSR for pseudo-random pixel ordering
 			do
 			{
 				// 17-bit LFSR
@@ -295,10 +337,10 @@ boolean FizzleFade(unsigned source, unsigned dest,
 
 			if (x < width && y < height)
 			{
-				// In the original, this copies from source to dest VGA pages
-				// In our port, the framebuffer already has the right content,
-				// so we just need to mark the pixel as "revealed"
-				// The effect works because VL_Present shows changes each frame
+				int sx = destx + x;
+				int sy = desty + y;
+				if (sx < 320 && sy < 200)
+					sdl_framebuffer[sy * 320 + sx] = newscreen[y * width + x];
 			}
 
 			if (rndval == 1)
@@ -312,6 +354,18 @@ boolean FizzleFade(unsigned source, unsigned dest,
 
 		VL_Present();
 	}
+
+	// Ensure all pixels are revealed
+	for (y = 0; y < height; y++)
+	{
+		int sy = desty + y;
+		if (sy < 200)
+			memcpy(&sdl_framebuffer[sy * 320 + destx],
+				   &newscreen[y * width],
+				   (destx + width <= 320) ? width : 320 - destx);
+	}
+	free(newscreen);
+	VL_Present();
 
 	return false;
 }
